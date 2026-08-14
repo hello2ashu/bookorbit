@@ -1,0 +1,71 @@
+services:
+  bookorbit:
+    image: ghcr.io/bookorbit/bookorbit:latest
+    container_name: Bookorbit
+    healthcheck:
+      test: ["CMD", "node", "-e", "const p=process.env.PORT||3211;fetch('http://127.0.0.1:'+p+'/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    init: true
+    ports:
+      - 3211:3211
+    environment:
+      NODE_ENV: production
+      PORT: 3211
+      POSTGRES_HOST: bookorbit_db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: bookorbituser
+      POSTGRES_PASSWORD: bookorbitpass
+      POSTGRES_DB: bookorbit
+      JWT_SECRET: PpOMvzYbemzyLpjjkMLVGeIwPItshopZdGUTsqxDkApDEMeqQDsPxPuArHuQRYhO
+      SETUP_BOOTSTRAP_TOKEN: DRBzAtHmpjjbBpSvvwtLiLmUZvmtrGcgqwVJQRvsTdfgUiAhIIhpIzMrVftYruoQ
+      APP_URL: https:/bookorbit.ashish-syn-nas.synology.me
+      CLIENT_URL: https://bookorbit.ashish-syn-nas.synology.me
+      PUID: 1026
+      PGID: 100
+      LIBRARY_BROWSE_ROOT: /books
+      NODE_MAX_OLD_SPACE_SIZE: 2048
+      BOOKORBIT_FIX_PERMISSIONS: true
+      LOG_LEVEL: info
+    volumes:
+      - /volume1/docker/bookorbit/books:/books:rw
+      - /volume1/docker/bookorbit/data:/data:rw
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure:5
+
+  db:
+    image: pgvector/pgvector:pg18
+    container_name: Bookorbit-DB
+    hostname: bookorbit_db
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "bookorbituser" -d "bookorbit"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    environment:
+      POSTGRES_USER: bookorbituser
+      POSTGRES_PASSWORD: bookorbitpass
+      POSTGRES_DB: bookorbit
+      PGDATA: /var/lib/postgresql/
+    volumes:
+      - /volume1/docker/bookorbit/db:/var/lib/postgresql:rw
+    restart: on-failure:5
