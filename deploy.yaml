@@ -68,4 +68,4 @@ services:
       PGDATA: /var/lib/postgresql/
     volumes:
       - /volume1/docker/bookorbit/db:/var/lib/postgresql:rw
-    restart: on-failure:5
+    restart: unless-stopped
