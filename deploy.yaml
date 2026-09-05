@@ -19,8 +19,8 @@ services:
       POSTGRES_USER: bookorbituser
       POSTGRES_PASSWORD: bookorbitpass
       POSTGRES_DB: bookorbit
-      JWT_SECRET: PpOMvzYbemzyLpjjkMLVGeIwPItshopZdGUTsqxDkApDEMeqQDsPxPuArHuQRYhO
-      SETUP_BOOTSTRAP_TOKEN: DRBzAtHmpjjbBpSvvwtLiLmUZvmtrGcgqwVJQRvsTdfgUiAhIIhpIzMrVftYruoQ
+      JWT_SECRET: ${bookorbitjwt}
+      SETUP_BOOTSTRAP_TOKEN: ${bookorbitbootstrap}
       APP_URL: https:/bookorbit.ashish-syn-nas.synology.me
       CLIENT_URL: https://bookorbit.ashish-syn-nas.synology.me
       PUID: 1026
