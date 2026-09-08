@@ -1,0 +1,13 @@
+{
+  "name": "bookorbit-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Keeps a fresh BookOrbit access token and forwards reading stats for Homepage's customapi widget",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
