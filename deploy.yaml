@@ -72,7 +72,7 @@ services:
     restart: unless-stopped
 
   bookorbit-proxy:
-    build: /volume1/docker/bookorbit/bookorbit-proxy   # path to the folder containing Dockerfile/server.js/package.json
+    build: ./bookorbit/bookorbit-proxy   # path to the folder containing Dockerfile/server.js/package.json
     container_name: bookorbit-proxy
     restart: unless-stopped
     environment:
