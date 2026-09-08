@@ -1,48 +1,107 @@
 const express = require('express');
+
 const app = express();
 
-const BOOKORBIT_URL = process.env.BOOKORBIT_URL;
-const USERNAME = process.env.BOOKORBIT_USERNAME;
-const PASSWORD = process.env.BOOKORBIT_PASSWORD;
 const PORT = process.env.PORT || 4321;
-
-// BookOrbit's access token lives for 15 minutes - refresh well before that
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
-let cachedToken = null;
+// Required environment variables.
+// These should be injected by Dockhand / Bitwarden Secrets Manager.
+const requiredEnvVars = [
+  'BOOKORBIT_URL',
+  'BOOKORBIT_USERNAME',
+  'BOOKORBIT_PASSWORD',
+];
 
-async function login() {
-  const res = await fetch(`${BOOKORBIT_URL}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USERNAME, password: PASSWORD }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Login failed: ${res.status} ${body}`);
+for (const name of requiredEnvVars) {
+  if (!process.env[name]) {
+    console.error(`Missing required environment variable: ${name}`);
+    process.exit(1);
   }
-
-  const data = await res.json();
-  cachedToken = data.accessToken;
-  console.log(`[${new Date().toISOString()}] BookOrbit login refreshed.`);
 }
 
+let cachedToken = null;
+let loginInProgress = null;
+
+/**
+ * Authenticate with BookOrbit and cache the access token.
+ */
+async function login() {
+  // Prevent multiple simultaneous login requests.
+  if (loginInProgress) {
+    return loginInProgress;
+  }
+
+  loginInProgress = (async () => {
+    const res = await fetch(
+      `${process.env.BOOKORBIT_URL}/api/v1/auth/login`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: process.env.BOOKORBIT_USERNAME,
+          password: process.env.BOOKORBIT_PASSWORD,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Login failed: ${res.status} ${body}`);
+    }
+
+    const data = await res.json();
+
+    if (!data.accessToken) {
+      throw new Error('Login succeeded but no accessToken was returned');
+    }
+
+    cachedToken = data.accessToken;
+
+    console.log(
+      `[${new Date().toISOString()}] BookOrbit login refreshed.`
+    );
+  })();
+
+  try {
+    await loginInProgress;
+  } finally {
+    loginInProgress = null;
+  }
+}
+
+/**
+ * Fetch BookOrbit user statistics.
+ */
 async function fetchStats() {
   if (!cachedToken) {
     await login();
   }
 
   const doFetch = () =>
-    fetch(`${BOOKORBIT_URL}/api/v1/user-statistics/summary`, {
-      headers: { Authorization: `Bearer ${cachedToken}` },
-    });
+    fetch(
+      `${process.env.BOOKORBIT_URL}/api/v1/user-statistics/summary`,
+      {
+        headers: {
+          Authorization: `Bearer ${cachedToken}`,
+        },
+      }
+    );
 
   let res = await doFetch();
 
-  // Token might have expired early (clock skew, early revoke, etc) - retry once with a fresh one
+  // Token may expire early because of clock skew,
+  // revocation, or other server-side conditions.
   if (res.status === 401) {
+    console.log(
+      `[${new Date().toISOString()}] Token rejected; refreshing login.`
+    );
+
+    cachedToken = null;
     await login();
+
     res = await doFetch();
   }
 
@@ -54,23 +113,58 @@ async function fetchStats() {
   return res.json();
 }
 
+/**
+ * Statistics endpoint.
+ */
 app.get('/stats', async (req, res) => {
   try {
     const stats = await fetchStats();
     res.json(stats);
   } catch (err) {
-    console.error(err.message);
-    res.status(502).json({ error: err.message });
+    console.error(
+      `[${new Date().toISOString()}] ${err.message}`
+    );
+
+    res.status(502).json({
+      error: err.message,
+    });
   }
 });
 
-app.get('/health', (req, res) => res.send('ok'));
+/**
+ * Health check.
+ */
+app.get('/health', (req, res) => {
+  res.status(200).send('ok');
+});
 
-// Log in immediately on startup so the first dashboard load isn't slow,
-// then keep the token fresh on a timer in the background.
-login().catch((err) => console.error('Initial login failed:', err.message));
+/**
+ * Initial login.
+ *
+ * This makes the first /stats request faster.
+ * If login fails, the service remains running and
+ * the scheduled refresh / subsequent request can retry.
+ */
+login().catch((err) => {
+  console.error(
+    `[${new Date().toISOString()}] Initial login failed: ${err.message}`
+  );
+});
+
+/**
+ * Refresh the BookOrbit token every 10 minutes.
+ */
 setInterval(() => {
-  login().catch((err) => console.error('Scheduled token refresh failed:', err.message));
+  login().catch((err) => {
+    console.error(
+      `[${new Date().toISOString()}] Scheduled token refresh failed: ${err.message}`
+    );
+  });
 }, REFRESH_INTERVAL_MS);
 
-app.listen(PORT, () => console.log(`bookorbit-proxy listening on :${PORT}`));
+/**
+ * Start HTTP server.
+ */
+app.listen(PORT, () => {
+  console.log(`bookorbit-proxy listening on :${PORT}`);
+});
