@@ -30,6 +30,9 @@ services:
       BOOKORBIT_FIX_PERMISSIONS: true
       LOG_LEVEL: info
       SWAGGER_ENABLED: true
+      BOOKORBIT_URL: ${BOOKORBIT_URL}
+      BOOKORBIT_USERNAME: ${BOOKORBIT_USERNAME}
+      BOOKORBIT_PASSWORD: ${BOOKORBIT_PASSWORD}
     volumes:
       - /volume1/docker/bookorbit/books:/books:rw
       - /volume1/docker/bookorbit/data:/data:rw
