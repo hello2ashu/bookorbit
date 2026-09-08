@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 
-const BOOKORBIT_URL = https://bookorbit.ashish-syn-nas.synology.me;           // e.g. https://bookorbit.ashish-syn-nas.synology.me
+const BOOKORBIT_URL = "https://bookorbit.ashish-syn-nas.synology.me";           // e.g. https://bookorbit.ashish-syn-nas.synology.me
 const USERNAME = hello2ashu;
 const PASSWORD = Ashgoe@2101;
 const PORT = process.env.PORT || 4321;
