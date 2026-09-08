@@ -1,0 +1,57 @@
+```yaml
+name: Build and Publish BookOrbit Proxy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "bookorbit-proxy/**"
+      - ".github/workflows/publish-bookorbit-proxy.yml"
+
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/bookorbit/bookorbit-proxy
+
+jobs:
+  build-and-push:
+    name: Build and push bookorbit-proxy
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./bookorbit-proxy
+          file: ./bookorbit-proxy/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+```
