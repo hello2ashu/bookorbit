@@ -72,7 +72,7 @@ services:
     restart: unless-stopped
 
   bookorbit-proxy:
-    build: ./bookorbit-proxy   # path to the folder containing Dockerfile/server.js/package.json
+    image: ghcr.io/hello2ashu/bookorbit-proxy:latest
     container_name: bookorbit-proxy
     restart: unless-stopped
     environment:
