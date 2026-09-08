@@ -1,9 +1,9 @@
 const express = require('express');
 const app = express();
 
-const BOOKORBIT_URL = "https://bookorbit.ashish-syn-nas.synology.me";
-const USERNAME = "hello2ashu";
-const PASSWORD = "Ashgoe@2101";
+const BOOKORBIT_URL = process.env.BOOKORBIT_URL;
+const USERNAME = process.env.BOOKORBIT_USERNAME;
+const PASSWORD = process.env.BOOKORBIT_PASSWORD;
 const PORT = process.env.PORT || 4321;
 
 // BookOrbit's access token lives for 15 minutes - refresh well before that
