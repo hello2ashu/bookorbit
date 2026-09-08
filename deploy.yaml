@@ -70,3 +70,16 @@ services:
     volumes:
       - /volume1/docker/bookorbit/db:/var/lib/postgresql:rw
     restart: unless-stopped
+
+  bookorbit-proxy:
+    build: ./bookorbit-proxy   # path to the folder containing Dockerfile/server.js/package.json
+    container_name: bookorbit-proxy
+    restart: unless-stopped
+    environment:
+      BOOKORBIT_URL: https://bookorbit.ashish-syn-nas.synology.me
+      BOOKORBIT_USERNAME: ${BOOKORBIT_USERNAME}
+      BOOKORBIT_PASSWORD: ${BOOKORBIT_PASSWORD}
+    ports:
+      - 4321:4321   # published so Homepage (a separate stack) can reach it via the NAS's LAN address
+    depends_on:
+      - bookorbit
